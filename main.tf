@@ -1,5 +1,3 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
 
 terraform {
   required_providers {
@@ -15,13 +13,13 @@ terraform {
   required_version = ">= 1.1.0"
 
   # Using S3 backend for state management instead of Terraform Cloud
-  /*backend "s3" {
-    bucket         = "your-terraform-state-bucket"  # Change this to your bucket name
+  backend "s3" {
+    bucket         = "Cyber-Threat-detection-lab"  # Change this to your bucket name
     key            = "detection-lab/terraform.tfstate"
     region         = "us-west-2"
     encrypt        = true
     dynamodb_table = "terraform-state-lock"  # Optional: for state locking
-  }*/
+  }
 }
 
 provider "aws" {
