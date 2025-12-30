@@ -48,7 +48,7 @@ jobs:
           }
 
           resource "aws_s3_bucket" "terraform_state" {
-            bucket = "your-terraform-state-detection-lab"  # CHANGE THIS!
+            bucket = "Cyber-Threat-detection-lab"  # Give the name I want!
 
             tags = {
               Name        = "Terraform State Bucket"
