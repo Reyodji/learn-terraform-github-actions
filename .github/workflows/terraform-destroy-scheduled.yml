@@ -1,0 +1,70 @@
+name: "Terraform Destroy - Scheduled"
+
+on:
+  schedule:
+    # Runs at 8:00 PM Ottawa time (EST/EDT)
+    # Ottawa is UTC-5 (EST) or UTC-4 (EDT)
+    # 8:00 PM EST = 01:00 UTC (next day)
+    # 8:00 PM EDT = 00:00 UTC (next day)
+    # Using 01:00 UTC to cover EST time zone
+    - cron: '0 1 * * *'  # Daily at 01:00 UTC (8:00 PM EST)
+  
+  workflow_dispatch:  # Allow manual trigger for testing
+
+env:
+  AWS_REGION: "us-west-2"
+  TF_VERSION: "1.6.0"
+
+jobs:
+  terraform-destroy:
+    name: "Terraform Destroy"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Destroy
+        id: destroy
+        run: |
+          echo "Starting Terraform destroy at $(date)"
+          terraform destroy -auto-approve
+          echo "Terraform destroy completed at $(date)"
+
+      - name: Notify Destruction
+        if: always()
+        run: |
+          if [ "${{ steps.destroy.outcome }}" == "success" ]; then
+            echo "✅ Resources successfully destroyed at 8:00 PM Ottawa time"
+          else
+            echo "❌ Terraform destroy failed"
+            exit 1
+          fi
+
+      - name: Create Destruction Summary
+        if: always()
+        run: |
+          echo "## Terraform Destroy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ steps.destroy.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY

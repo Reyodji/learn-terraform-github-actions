@@ -14,13 +14,14 @@ terraform {
   }
   required_version = ">= 1.1.0"
 
-  cloud {
-    organization = "Dev-Threat_Detection_Lab"
-
-    workspaces {
-      name = "gh-actions-demo"
-    }
-  }
+  # Using S3 backend for state management instead of Terraform Cloud
+  /*backend "s3" {
+    bucket         = "your-terraform-state-bucket"  # Change this to your bucket name
+    key            = "detection-lab/terraform.tfstate"
+    region         = "us-west-2"
+    encrypt        = true
+    dynamodb_table = "terraform-state-lock"  # Optional: for state locking
+  }*/
 }
 
 provider "aws" {
@@ -58,22 +59,36 @@ resource "aws_instance" "web" {
               echo "Hello World" > /var/www/html/index.html
               systemctl restart apache2
               EOF
+
+  tags = {
+    Name        = "DetectionLab-Web"
+    Environment = "Lab"
+    ManagedBy   = "Terraform"
+  }
 }
 
 resource "aws_security_group" "web-sg" {
   name = "${random_pet.sg.id}-sg"
+  
   ingress {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  // connectivity to ubuntu mirrors is required to run `apt-get update` and `apt-get install apache2`
+  
+  # connectivity to ubuntu mirrors is required to run `apt-get update` and `apt-get install apache2`
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "DetectionLab-SG"
+    Environment = "Lab"
+    ManagedBy   = "Terraform"
   }
 }
 
